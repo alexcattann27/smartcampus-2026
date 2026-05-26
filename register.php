@@ -35,43 +35,94 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 <head>
 
     <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Inscription</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 </head>
 
-<body>
+<body class="bg-dark d-flex justify-content-center align-items-center vh-100">
 
-    <h1>Inscription</h1>
+    <div class="card shadow p-4" style="width: 400px; border-radius: 20px;">
 
-    <p><?php echo $message; ?></p>
+        <h1 class="text-center mb-4">SmartCampus</h1>
 
-    <form method="POST">
+        <?php if($message != ""): ?>
 
-        <input type="text" name="nom" placeholder="Nom" required>
-        <br><br>
+            <div class="alert alert-success">
 
-        <input type="text" name="prenom" placeholder="Prénom" required>
-        <br><br>
+                <?php echo $message; ?>
 
-        <input type="email" name="email" placeholder="Email" required>
-        <br><br>
+            </div>
 
-        <input type="password" name="password" placeholder="Mot de passe" required>
-        <br><br>
+        <?php endif; ?>
 
-        <select name="role">
+        <form method="POST">
 
-            <option value="student">Student</option>
-            <option value="teacher">Teacher</option>
-            <option value="admin">Admin</option>
+            <div class="mb-3">
 
-        </select>
+                <input type="text"
+                       name="nom"
+                       class="form-control"
+                       placeholder="Nom"
+                       required>
 
-        <br><br>
+            </div>
 
-        <button type="submit">S'inscrire</button>
+            <div class="mb-3">
 
-    </form>
+                <input type="text"
+                       name="prenom"
+                       class="form-control"
+                       placeholder="Prénom"
+                       required>
+
+            </div>
+
+            <div class="mb-3">
+
+                <input type="email"
+                       name="email"
+                       class="form-control"
+                       placeholder="Email"
+                       required>
+
+            </div>
+
+            <div class="mb-3">
+
+                <input type="password"
+                       name="password"
+                       class="form-control"
+                       placeholder="Mot de passe"
+                       required>
+
+            </div>
+
+            <div class="mb-3">
+
+                <select name="role" class="form-select">
+
+                    <option value="student">Student</option>
+                    <option value="teacher">Teacher</option>
+                    <option value="admin">Admin</option>
+
+                </select>
+
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100">
+
+                S'inscrire
+
+            </button>
+
+        </form>
+
+    </div>
 
 </body>
 
