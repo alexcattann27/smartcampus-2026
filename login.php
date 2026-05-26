@@ -26,8 +26,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $_SESSION["user_name"] = $user["prenom"];
         $_SESSION["user_role"] = $user["role"];
 
-        $message = "Connexion réussie";
-        $alertType = "success";
+        if ($user["role"] == "admin") {
+
+            header("Location: admin/dashboard.php");
+            exit();
+
+        }
+
+        if ($user["role"] == "teacher") {
+
+            header("Location: teacher/dashboard.php");
+            exit();
+
+        }
+
+        if ($user["role"] == "student") {
+
+            header("Location: student/dashboard.php");
+            exit();
+
+        }
 
     } else {
 
