@@ -83,7 +83,7 @@ $stmtAvailable->execute([$student_id]);
 $available_courses = $stmtAvailable->fetchAll();
 
 $stmtGrades = $pdo->prepare("
-    SELECT c.nom AS course_name, g.grade
+    SELECT c.nom AS course_name, g.grade, g.is_locked
     FROM grades g
     JOIN courses c ON g.course_id = c.id
     WHERE g.student_id = ?
@@ -200,6 +200,7 @@ $my_schedule = $stmtSchedule->fetchAll();
                                 <tr>
                                     <th class="ps-3">Matière</th>
                                     <th>Note</th>
+                                    <th>Statut</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -209,13 +210,20 @@ $my_schedule = $stmtSchedule->fetchAll();
                                         <td class="fw-bold <?php echo ($grade['grade'] >= 10) ? 'text-success' : 'text-danger'; ?>">
                                             <?php echo htmlspecialchars($grade['grade']); ?> / 20
                                         </td>
+                                        <td>
+                                            <?php if ($grade['is_locked']): ?>
+                                                <span class="badge bg-danger">Définitif</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark">Provisoire</span>
+                                            <?php endif; ?>
+                                        </td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
                             <?php if ($moyenne_generale !== null): ?>
                             <tfoot>
                                 <tr class="table-light fw-bold fs-5">
-                                    <td class="ps-3 text-end">Moyenne Générale :</td>
+                                    <td class="ps-3 text-end" colspan="2">Moyenne Générale :</td>
                                     <td class="<?php echo ($moyenne_generale >= 10) ? 'text-success' : 'text-danger'; ?>">
                                         <?php echo $moyenne_generale; ?> / 20
                                     </td>
