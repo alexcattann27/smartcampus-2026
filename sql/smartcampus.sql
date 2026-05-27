@@ -29,6 +29,7 @@ CREATE TABLE grades (
     student_id INT,
     course_id INT,
     grade FLOAT,
+    is_locked TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (student_id) REFERENCES users(id),
     FOREIGN KEY (course_id) REFERENCES courses(id)
 );
