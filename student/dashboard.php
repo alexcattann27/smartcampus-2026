@@ -5,7 +5,6 @@ session_start();
 require_once "../config/database.php";
 require_once "../includes/navbar.php";
 
-// Protection Student
 if (!isset($_SESSION["user_id"]) || $_SESSION["user_role"] !== "student") {
 
     header("Location: ../login.php");
@@ -14,7 +13,6 @@ if (!isset($_SESSION["user_id"]) || $_SESSION["user_role"] !== "student") {
 
 $student_id = $_SESSION["user_id"];
 
-// RÉCUPÉRATION DES COURS
 $stmtCourses = $pdo->prepare("
     SELECT c.nom, c.description
 
@@ -30,7 +28,6 @@ $stmtCourses->execute([$student_id]);
 
 $my_courses = $stmtCourses->fetchAll();
 
-// RÉCUPÉRATION DES NOTES
 $stmtGrades = $pdo->prepare("
     SELECT c.nom as course_nom, g.grade
 
@@ -46,7 +43,6 @@ $stmtGrades->execute([$student_id]);
 
 $my_grades = $stmtGrades->fetchAll();
 
-// RÉCUPÉRATION EMPLOI DU TEMPS
 $stmtSchedules = $pdo->prepare("
     SELECT
         c.nom as course_nom,
@@ -101,7 +97,6 @@ $my_schedule = $stmtSchedules->fetchAll();
 
     <div class="row mb-4">
 
-        <!-- MES COURS -->
 
         <div class="col-lg-4 mb-4">
 
@@ -153,15 +148,13 @@ $my_schedule = $stmtSchedules->fetchAll();
 
         </div>
 
-        <!-- MES NOTES -->
-
         <div class="col-lg-4 mb-4">
 
             <div class="card shadow border-0 rounded-4 h-100">
 
                 <div class="card-header bg-white py-3 fw-bold">
 
-                    📝 Mes notes
+                     Mes notes
 
                 </div>
 
@@ -205,7 +198,6 @@ $my_schedule = $stmtSchedules->fetchAll();
 
         </div>
 
-        <!-- EMPLOI DU TEMPS -->
 
         <div class="col-lg-4 mb-4">
 
