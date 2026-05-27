@@ -3,7 +3,6 @@
 session_start();
 
 require_once "../config/database.php";
-require_once "../includes/navbar.php";
 
 // Protection Teacher
 if (!isset($_SESSION["user_id"]) || $_SESSION["user_role"] !== "teacher") {
@@ -21,6 +20,7 @@ $status = "success";
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_course'])) {
 
     $nom = trim($_POST['nom_cours']);
+
     $description = trim($_POST['description']);
 
     if (!empty($nom) && !empty($description)) {
@@ -34,6 +34,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_course'])) {
 
             $message = "Cours ajouté avec succès.";
         }
+
+    } else {
+
+        $message = "Veuillez remplir tous les champs.";
+
+        $status = "danger";
     }
 }
 
@@ -43,17 +49,27 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['edit_course'])) {
     $course_id = intval($_POST['course_id']);
 
     $nom = trim($_POST['nom_cours']);
+
     $description = trim($_POST['description']);
 
-    $stmt = $pdo->prepare("
-        UPDATE courses
-        SET nom = ?, description = ?
-        WHERE id = ? AND teacher_id = ?
-    ");
+    if (!empty($nom) && !empty($description)) {
 
-    if ($stmt->execute([$nom, $description, $course_id, $teacher_id])) {
+        $stmt = $pdo->prepare("
+            UPDATE courses
+            SET nom = ?, description = ?
+            WHERE id = ? AND teacher_id = ?
+        ");
 
-        $message = "Cours modifié avec succès.";
+        if ($stmt->execute([$nom, $description, $course_id, $teacher_id])) {
+
+            $message = "Cours modifié avec succès.";
+        }
+
+    } else {
+
+        $message = "Veuillez remplir tous les champs.";
+
+        $status = "danger";
     }
 }
 
@@ -86,6 +102,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_course'])) {
         $pdo->rollBack();
 
         $message = "Erreur : " . $e->getMessage();
+
         $status = "danger";
     }
 }
@@ -113,7 +130,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_grade'])) {
 
     } else {
 
-        $message = "La note doit être entre 0 et 20.";
+        $message = "La note doit être comprise entre 0 et 20.";
+
         $status = "danger";
     }
 }
@@ -131,21 +149,30 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['add_schedule'])) {
 
     $salle = trim($_POST['salle']);
 
-    $stmt = $pdo->prepare("
-        INSERT INTO schedules
-        (course_id, jour, heure_debut, heure_fin, salle)
-        VALUES (?, ?, ?, ?, ?)
-    ");
+    if ($heure_fin <= $heure_debut) {
 
-    if ($stmt->execute([
-        $course_id,
-        $jour,
-        $heure_debut,
-        $heure_fin,
-        $salle
-    ])) {
+        $message = "L'heure de fin doit être après l'heure de début.";
 
-        $message = "Créneau ajouté avec succès.";
+        $status = "danger";
+
+    } else {
+
+        $stmt = $pdo->prepare("
+            INSERT INTO schedules
+            (course_id, jour, heure_debut, heure_fin, salle)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+
+        if ($stmt->execute([
+            $course_id,
+            $jour,
+            $heure_debut,
+            $heure_fin,
+            $salle
+        ])) {
+
+            $message = "Créneau ajouté avec succès.";
+        }
     }
 }
 
@@ -205,7 +232,9 @@ $enrolled_students = $stmtStudents->fetchAll();
 
 <body style="background: #f4f6f9;">
 
-<div class="container mb-5">
+<?php require_once "../includes/navbar.php"; ?>
+
+<div class="container mt-4 mb-5">
 
     <h1 class="fw-bold mb-4">
 
@@ -231,7 +260,7 @@ $enrolled_students = $stmtStudents->fetchAll();
 
     <div class="row">
 
-        <div class="col-lg-4 mb-4">
+        <div class="col-12 col-lg-4 mb-4">
 
             <!-- AJOUT COURS -->
 
@@ -258,6 +287,7 @@ $enrolled_students = $stmtStudents->fetchAll();
                             <input type="text"
                                    name="nom_cours"
                                    class="form-control"
+                                   maxlength="100"
                                    required>
 
                         </div>
@@ -495,6 +525,7 @@ $enrolled_students = $stmtStudents->fetchAll();
                                    name="salle"
                                    class="form-control"
                                    placeholder="Salle"
+                                   maxlength="100"
                                    required>
 
                         </div>
@@ -527,7 +558,7 @@ $enrolled_students = $stmtStudents->fetchAll();
 
         <!-- CRUD COURS -->
 
-        <div class="col-lg-8">
+        <div class="col-12 col-lg-8">
 
             <div class="card shadow border-0 rounded-4">
 
@@ -567,6 +598,7 @@ $enrolled_students = $stmtStudents->fetchAll();
                                                name="nom_cours"
                                                value="<?php echo htmlspecialchars($course['nom']); ?>"
                                                class="form-control fw-bold"
+                                               maxlength="100"
                                                required>
 
                                     </div>
