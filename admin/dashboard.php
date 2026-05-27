@@ -2,7 +2,6 @@
 session_start();
 
 require_once "../config/database.php";
-require_once "../includes/navbar.php";
 
 // Protection de la page - Vérification du rôle Admin
 if (!isset($_SESSION["user_id"]) || $_SESSION["user_role"] !== "admin") {
@@ -32,10 +31,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_user'])) {
 
             // Suppression données étudiant
             $pdo->prepare("DELETE FROM enrollments WHERE student_id = ?")->execute([$id_to_delete]);
+
             $pdo->prepare("DELETE FROM grades WHERE student_id = ?")->execute([$id_to_delete]);
 
             // Suppression données professeur
-            $stmtCourses = $pdo->prepare("SELECT id FROM courses WHERE teacher_id = ?");
+            $stmtCourses = $pdo->prepare("
+                SELECT id
+                FROM courses
+                WHERE teacher_id = ?
+            ");
+
             $stmtCourses->execute([$id_to_delete]);
 
             while ($course = $stmtCourses->fetch()) {
@@ -43,7 +48,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_user'])) {
                 $course_id = $course['id'];
 
                 $pdo->prepare("DELETE FROM schedules WHERE course_id = ?")->execute([$course_id]);
+
                 $pdo->prepare("DELETE FROM enrollments WHERE course_id = ?")->execute([$course_id]);
+
                 $pdo->prepare("DELETE FROM grades WHERE course_id = ?")->execute([$course_id]);
             }
 
@@ -61,17 +68,68 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['delete_user'])) {
             $pdo->rollBack();
 
             $message = "Erreur : " . $e->getMessage();
+
             $status = "danger";
         }
     }
 }
 
+// INSCRIPTION ÉTUDIANT À UN COURS
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enroll_student'])) {
+
+    $student_id = intval($_POST['student_id']);
+
+    $course_id = intval($_POST['course_id']);
+
+    // Vérifie doublon
+    $check = $pdo->prepare("
+        SELECT *
+        FROM enrollments
+        WHERE student_id = ?
+        AND course_id = ?
+    ");
+
+    $check->execute([$student_id, $course_id]);
+
+    if ($check->rowCount() > 0) {
+
+        $message = "Étudiant déjà inscrit à ce cours.";
+
+        $status = "danger";
+
+    } else {
+
+        $stmt = $pdo->prepare("
+            INSERT INTO enrollments (student_id, course_id)
+            VALUES (?, ?)
+        ");
+
+        if ($stmt->execute([$student_id, $course_id])) {
+
+            $message = "Étudiant inscrit avec succès.";
+
+            $status = "success";
+        }
+    }
+}
+
 // STATISTIQUES
-$nbStudents = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'student'")->fetchColumn();
+$nbStudents = $pdo->query("
+    SELECT COUNT(*)
+    FROM users
+    WHERE role = 'student'
+")->fetchColumn();
 
-$nbTeachers = $pdo->query("SELECT COUNT(*) FROM users WHERE role = 'teacher'")->fetchColumn();
+$nbTeachers = $pdo->query("
+    SELECT COUNT(*)
+    FROM users
+    WHERE role = 'teacher'
+")->fetchColumn();
 
-$nbCourses = $pdo->query("SELECT COUNT(*) FROM courses")->fetchColumn();
+$nbCourses = $pdo->query("
+    SELECT COUNT(*)
+    FROM courses
+")->fetchColumn();
 
 // UTILISATEURS
 $stmtUsers = $pdo->query("
@@ -81,6 +139,23 @@ $stmtUsers = $pdo->query("
 ");
 
 $users = $stmtUsers->fetchAll();
+
+// RÉCUPÉRATION ÉTUDIANTS
+$stmtStudents = $pdo->query("
+    SELECT id, nom, prenom
+    FROM users
+    WHERE role = 'student'
+");
+
+$students = $stmtStudents->fetchAll();
+
+// RÉCUPÉRATION COURS
+$stmtCourses = $pdo->query("
+    SELECT id, nom
+    FROM courses
+");
+
+$courses = $stmtCourses->fetchAll();
 
 ?>
 
@@ -101,7 +176,9 @@ $users = $stmtUsers->fetchAll();
 
 <body style="background: #f4f6f9;">
 
-<div class="container mb-5">
+<?php require_once "../includes/navbar.php"; ?>
+
+<div class="container mt-4 mb-5">
 
     <h1 class="mb-4 fw-bold">
 
@@ -124,6 +201,8 @@ $users = $stmtUsers->fetchAll();
         </div>
 
     <?php endif; ?>
+
+    <!-- STATISTIQUES -->
 
     <div class="row mb-4">
 
@@ -200,6 +279,104 @@ $users = $stmtUsers->fetchAll();
         </div>
 
     </div>
+
+    <!-- INSCRIPTION ÉTUDIANT -->
+
+    <div class="card shadow border-0 rounded-4 mb-4">
+
+        <div class="card-header bg-white py-3">
+
+            <h3 class="fw-bold mb-0">
+
+                Inscrire un étudiant
+
+            </h3>
+
+        </div>
+
+        <div class="card-body">
+
+            <form method="POST">
+
+                <div class="row">
+
+                    <div class="col-md-5 mb-3">
+
+                        <select name="student_id"
+                                class="form-select"
+                                required>
+
+                            <option value="">
+
+                                Sélectionner un étudiant
+
+                            </option>
+
+                            <?php foreach($students as $student): ?>
+
+                                <option value="<?php echo $student['id']; ?>">
+
+                                    <?php echo htmlspecialchars(
+                                        $student['nom']
+                                        . ' '
+                                        . $student['prenom']
+                                    ); ?>
+
+                                </option>
+
+                            <?php endforeach; ?>
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-5 mb-3">
+
+                        <select name="course_id"
+                                class="form-select"
+                                required>
+
+                            <option value="">
+
+                                Sélectionner un cours
+
+                            </option>
+
+                            <?php foreach($courses as $course): ?>
+
+                                <option value="<?php echo $course['id']; ?>">
+
+                                    <?php echo htmlspecialchars($course['nom']); ?>
+
+                                </option>
+
+                            <?php endforeach; ?>
+
+                        </select>
+
+                    </div>
+
+                    <div class="col-md-2 mb-3">
+
+                        <button type="submit"
+                                name="enroll_student"
+                                class="btn btn-primary w-100 fw-bold">
+
+                            Inscrire
+
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <!-- GESTION UTILISATEURS -->
 
     <div class="card shadow border-0 rounded-4">
 
