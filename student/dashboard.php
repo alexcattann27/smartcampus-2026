@@ -11,9 +11,11 @@ $student_id = $_SESSION["user_id"];
 $message = "";
 $status = "success";
 
+// --- BLOC MIS À JOUR : GESTION DES INSCRIPTIONS AVEC CAPACITÉ MAXIMALE ---
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enroll_course'])) {
     $course_id = intval($_POST['course_id']);
     
+    // 1. Vérifier si l'étudiant est déjà inscrit
     $stmtCheck = $pdo->prepare("SELECT id FROM enrollments WHERE student_id = ? AND course_id = ?");
     $stmtCheck->execute([$student_id, $course_id]);
     
@@ -21,34 +23,51 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['enroll_course'])) {
         $message = "Vous êtes déjà inscrit à ce cours !";
         $status = "warning";
     } else {
-        $stmtConflict = $pdo->prepare("
-            SELECT s1.jour, s1.heure_debut, s1.heure_fin, c1.nom AS new_course
-            FROM schedules s1
-            JOIN schedules s2 ON s1.jour = s2.jour 
-                AND s1.heure_debut < s2.heure_fin 
-                AND s1.heure_fin > s2.heure_debut
-            JOIN enrollments e ON s2.course_id = e.course_id
-            JOIN courses c1 ON s1.course_id = c1.id
-            WHERE s1.course_id = ? AND e.student_id = ?
+        // 2. Règle métier - Contrôle des capacités de la classe
+        $stmtCap = $pdo->prepare("
+            SELECT capacite_max, 
+                   (SELECT COUNT(*) FROM enrollments WHERE course_id = ?) as total_inscrits 
+            FROM courses WHERE id = ?
         ");
-        $stmtConflict->execute([$course_id, $student_id]);
-        $conflict = $stmtConflict->fetch();
+        $stmtCap->execute([$course_id, $course_id]);
+        $capInfo = $stmtCap->fetch();
 
-        if ($conflict) {
-            $message = "Conflit d'emploi du temps détecté le " . $conflict['jour'] . " pour le cours " . $conflict['new_course'] . " !";
+        if ($capInfo && $capInfo['total_inscrits'] >= $capInfo['capacite_max']) {
+            $message = "Inscription refusée : La capacité maximale de ce cours (" . $capInfo['capacite_max'] . " places) est atteinte.";
             $status = "danger";
         } else {
-            $stmtInsert = $pdo->prepare("INSERT INTO enrollments (student_id, course_id) VALUES (?, ?)");
-            if ($stmtInsert->execute([$student_id, $course_id])) {
-                $message = "Inscription réussie !";
-                $status = "success";
-            } else {
-                $message = "Erreur lors de l'inscription.";
+            // 3. Règle métier - Détection des conflits d'emploi du temps
+            $stmtConflict = $pdo->prepare("
+                SELECT s1.jour, s1.heure_debut, s1.heure_fin, c1.nom AS new_course
+                FROM schedules s1
+                JOIN schedules s2 ON s1.jour = s2.jour 
+                    AND s1.heure_debut < s2.heure_fin 
+                    AND s1.heure_fin > s2.heure_debut
+                JOIN enrollments e ON s2.course_id = e.course_id
+                JOIN courses c1 ON s1.course_id = c1.id
+                WHERE s1.course_id = ? AND e.student_id = ?
+            ");
+            $stmtConflict->execute([$course_id, $student_id]);
+            $conflict = $stmtConflict->fetch();
+
+            if ($conflict) {
+                $message = "Conflit d'emploi du temps détecté le " . $conflict['jour'] . " pour le cours " . $conflict['new_course'] . " !";
                 $status = "danger";
+            } else {
+                // 4. Validation finale de l'inscription
+                $stmtInsert = $pdo->prepare("INSERT INTO enrollments (student_id, course_id) VALUES (?, ?)");
+                if ($stmtInsert->execute([$student_id, $course_id])) {
+                    $message = "Inscription réussie !";
+                    $status = "success";
+                } else {
+                    $message = "Erreur lors de l'inscription.";
+                    $status = "danger";
+                }
             }
         }
     }
 }
+// --- FIN DU BLOC MIS À JOUR ---
 
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['unenroll_course'])) {
     $course_id = intval($_POST['course_id']);
