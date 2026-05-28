@@ -43,3 +43,12 @@ CREATE TABLE schedules (
     salle VARCHAR(50),
     FOREIGN KEY (course_id) REFERENCES courses(id)
 );
+
+CREATE TABLE courses (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nom VARCHAR(100),
+    description TEXT,
+    teacher_id INT,
+    capacite_max INT NOT NULL DEFAULT 30,
+    FOREIGN KEY (teacher_id) REFERENCES users(id)
+);
